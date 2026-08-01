@@ -34,9 +34,21 @@ pipeline {
     post {
         success {
             echo 'Deployment to VM2 (/var/www/html) and SonarQube analysis completed successfully!'
+            emailext (
+                subject: "SUCCESS: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
+                body: "Great news! Your pipeline finished successfully.\n\nConsole output: ${env.BUILD_URL}",
+                to: 'amittyagi1269@gmail.com',
+                from: 'amittyagi1269@gmail.com'
+            )
         }
         failure {
             echo 'Pipeline failed.'
+            emailext (
+                subject: "FAILED: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
+                body: "Alert: Your build or deployment has failed.\n\nConsole output: ${env.BUILD_URL}",
+                to: 'amittyagi1269@gmail.com',
+                from: 'amittyagi1269@gmail.com'
+            )
         }
     }
 }
