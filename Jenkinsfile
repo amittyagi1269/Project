@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        SONAR_HOST_URL = 'http://sonarqube:9000'
+        VM2_IP = '10.26.0.198'
+        VM2_USER = 'root'
+        TARGET_DIR = '/var/www/html'
     }
 
     stages {
@@ -12,32 +14,26 @@ pipeline {
             }
         }
 
-        stage('SonarQube Code Testing') {
+        stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh '''
-                        echo "Running automated SonarQube code scan..."
-                        sonar-scanner \
-                          -Dsonar.host.url=${SONAR_HOST_URL} \
-                          -Dsonar.token=${SONAR_TOKEN}
-                    '''
-                }
+                sh 'sonar-scanner -Dsonar.host.url=http://10.26.0.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=.'
             }
         }
 
         stage('Deploy to VM2') {
             steps {
-                sh '''
-                    echo "Deploying code to VM2 via SSH..."
-                    rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude=.git ./ root@10.26.0.198:/var/www/html/
-                '''
+                sh """
+                    echo 'Deploying code to VM2 via passwordless SSH...'
+                    rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude='.git' ./ ${VM2_USER}@${VM2_IP}:${TARGET_DIR}/
+                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload apache2'
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline executed and deployed successfully!'
+            echo 'Deployment to VM2 (/var/www/html) and SonarQube analysis completed successfully!'
         }
         failure {
             echo 'Pipeline failed.'
