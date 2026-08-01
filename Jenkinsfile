@@ -5,6 +5,8 @@ pipeline {
         VM2_IP = '192.168.31.252'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
+        // Bind the Jenkins credential to an environment variable automatically
+        SONAR_TOKEN = credentials('sonar-token')
     }
 
     stages {
