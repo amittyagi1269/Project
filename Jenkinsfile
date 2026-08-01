@@ -5,6 +5,8 @@ pipeline {
         VM2_IP = '192.168.31.252'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
+        // Optional: If you use SonarQube token, you can define it here or hardcode it below
+        SONAR_TOKEN = 'your_sonarqube_token_here' 
     }
 
     stages {
@@ -16,7 +18,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh 'sonar-scanner -Dsonar.host.url=http://192.168.31.252:9000 -Dsonar.projectKey=my-project -Dsonar.sources=.'
+                sh 'sonar-scanner -Dsonar.host.url=http://192.168.31.252:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=${SONAR_TOKEN}'
             }
         }
 
@@ -34,20 +36,18 @@ pipeline {
     post {
         success {
             echo 'Deployment to VM2 (/var/www/html) and SonarQube analysis completed successfully!'
-            emailext (
+            mail (
                 subject: "SUCCESS: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
                 body: "Great news! Your pipeline finished successfully.\n\nConsole output: ${env.BUILD_URL}",
-                to: 'amittyagi1269@gmail.com',
-                from: 'amittyagi1269@gmail.com'
+                to: 'amittyagi1269@gmail.com'
             )
         }
         failure {
             echo 'Pipeline failed.'
-            emailext (
+            mail (
                 subject: "FAILED: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
                 body: "Alert: Your build or deployment has failed.\n\nConsole output: ${env.BUILD_URL}",
-                to: 'amittyagi1269@gmail.com',
-                from: 'amittyagi1269@gmail.com'
+                to: 'amittyagi1269@gmail.com'
             )
         }
     }
