@@ -25,7 +25,7 @@ pipeline {
                 sh """
                     echo 'Deploying code to VM2 via passwordless SSH...'
                     rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude='.git' ./ ${VM2_USER}@${VM2_IP}:${TARGET_DIR}/
-                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload apache2'
+                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload httpd'
                 """
             }
         }
