@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        VM2_IP = '10.26.0.198'
+        VM2_IP = '10.59.244.198'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
     }
@@ -16,7 +16,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh 'sonar-scanner -Dsonar.host.url=http://10.26.0.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=.'
+                sh 'sonar-scanner -Dsonar.host.url=http://10.59.244.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=.'
             }
         }
 
