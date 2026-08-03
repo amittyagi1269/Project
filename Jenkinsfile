@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        VM2_IP = '192.168.31.252'
+        VM2_IP = '10.26.0.198'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
     }
@@ -19,14 +19,14 @@ pipeline {
                 script {
                     sh '''
                         echo "Waiting for SonarQube service to be completely ready..."
-                        until curl -s http://192.168.31.252:9000/api/system/status | grep -q '"status":"UP"'; do
+                        until curl -s http://10.26.0.198:9000/api/system/status | grep -q '"status":"UP"'; do
                             sleep 5
                         done
                         echo "SonarQube is ready!"
                     '''
                 }
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh 'sonar-scanner -Dsonar.host.url=http://192.168.31.252:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=${SONAR_TOKEN}'
+                    sh 'sonar-scanner -Dsonar.host.url=http://10.26.0.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=${SONAR_TOKEN}'
                 }
             }
         }
