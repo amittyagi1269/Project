@@ -19,7 +19,7 @@ pipeline {
             steps {
                 sh '''
                     sonar-scanner \
-                    -Dsonar.host.url=http://10.109.35.198:9000 \
+                    -Dsonar.host.url=http://f77:9000 \
                     -Dsonar.projectKey=Project-CI-CD-Pipeline \
                     -Dsonar.sources=. \
                     -Dsonar.token=$SONAR_TOKEN
