@@ -5,6 +5,7 @@ pipeline {
         VM2_IP = '10.109.35.198'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
+        SONAR_TOKEN = credentials('sonar-token')
     }
 
     stages {
@@ -16,15 +17,13 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonar-token') {
-                    sh '''
-                        sonar-scanner \
-                        -Dsonar.host.url=http://f77:9000 \
-                        -Dsonar.projectKey=Project-CI-CD-Pipeline \
-                        -Dsonar.sources=. \
-                        -Dsonar.login=$SONAR_AUTH_TOKEN
-                    '''
-                }
+                sh '''
+                    sonar-scanner \
+                    -Dsonar.host.url=http://f77:9000 \
+                    -Dsonar.projectKey=Project-CI-CD-Pipeline \
+                    -Dsonar.sources=. \
+                    -Dsonar.login=$SONAR_TOKEN
+                '''
             }
         }
 
