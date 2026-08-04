@@ -19,10 +19,10 @@ pipeline {
             steps {
                 sh '''
                     sonar-scanner \
-                    -Dsonar.host.url=http://f77:9000 \
+                    -Dsonar.host.url=http://10.109.35.198:9000 \
                     -Dsonar.projectKey=Project-CI-CD-Pipeline \
                     -Dsonar.sources=. \
-                    -Dsonar.login=$SONAR_TOKEN
+                    -Dsonar.token=$SONAR_TOKEN
                 '''
             }
         }
@@ -43,7 +43,7 @@ pipeline {
             echo 'Deployment to VM2 and SonarQube analysis completed successfully!'
             emailext (
                 subject: "SUCCESS: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Good news! The CI/CD pipeline completed successfully.\n\nTarget VM: ${env.VM2_IP}\nConsole Output: ${env.BUILD_URL}",
+                body: "Good news! The CI/CD pipeline completed successfully after code update.\n\nTarget VM: ${env.VM2_IP}\nConsole Output: ${env.BUILD_URL}",
                 to: "amittyagi1269@gmail.com"
             )
         }
