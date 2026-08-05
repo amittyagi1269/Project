@@ -5,7 +5,6 @@ pipeline {
         VM2_IP = '10.43.7.198'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
-        SONAR_TOKEN = credentials('sonar-token')
     }
 
     stages {
@@ -17,13 +16,9 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh '''
-                    sonar-scanner \
-                    -Dsonar.host.url=http://sonarqube-server:9000 \
-                    -Dsonar.projectKey=Project-CI-CD-Pipeline \
-                    -Dsonar.sources=. \
-                    -Dsonar.token=$SONAR_TOKEN
-                '''
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh 'sonar-scanner -Dsonar.host.url=http://sonarqube:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.login=$SONAR_TOKEN'
+                }
             }
         }
 
@@ -32,7 +27,7 @@ pipeline {
                 sh """
                     echo 'Deploying code to VM2 via passwordless SSH...'
                     rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude='.git' ./ ${VM2_USER}@${VM2_IP}:${TARGET_DIR}/
-                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload apache2'
+                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload httpd'
                 """
             }
         }
@@ -43,7 +38,7 @@ pipeline {
             echo 'Deployment to VM2 and SonarQube analysis completed successfully!'
             emailext (
                 subject: "SUCCESS: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Good news! The CI/CD pipeline completed successfully after code update.\n\nTarget VM: ${env.VM2_IP}\nConsole Output: ${env.BUILD_URL}",
+                body: "Good news! The CI/CD pipeline completed successfully.\n\nTarget VM: ${env.VM2_IP}\nConsole Output: ${env.BUILD_URL}",
                 to: "amittyagi1269@gmail.com"
             )
         }
