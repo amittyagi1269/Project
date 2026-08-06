@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        VM2_IP = '10.43.7.198'
+        VM2_IP = '10.13.152.198'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
     }
