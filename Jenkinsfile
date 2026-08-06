@@ -17,7 +17,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh 'sonar-scanner -Dsonar.host.url=http://sonarqube-server:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=$SONAR_TOKEN'
+                    sh 'sonar-scanner -Dsonar.host.url=http://10.13.152.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=$SONAR_TOKEN'
                 }
             }
         }
