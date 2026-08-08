@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        VM2_IP = '10.133.198.198'
+        VM2_IP = '192.168.31.252'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
     }
@@ -14,20 +14,12 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh 'sonar-scanner -Dsonar.host.url=http://10.133.198.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=$SONAR_TOKEN'
-                }
-            }
-        }
-
         stage('Deploy to VM2') {
             steps {
                 sh """
                     echo 'Deploying code to VM2 via passwordless SSH...'
                     rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude='.git' ./ ${VM2_USER}@${VM2_IP}:${TARGET_DIR}/
-                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload httpd'
+                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload apache2'
                 """
             }
         }
@@ -35,20 +27,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment to VM2 and SonarQube analysis completed successfully!'
-            emailext (
-                subject: "SUCCESS: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Good news! The CI/CD pipeline completed successfully.\n\nTarget VM: ${env.VM2_IP}\nConsole Output: ${env.BUILD_URL}",
-                to: "amittyagi1269@gmail.com"
-            )
+            echo 'Deployment to VM2 (/var/www/html) completed successfully!'
         }
         failure {
-            echo 'Pipeline failed. Sending alert email...'
-            emailext (
-                subject: "FAILED: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Oops! The CI/CD pipeline has failed during execution.\n\nCheck logs and fix issues at: ${env.BUILD_URL}",
-                to: "amittyagi1269@gmail.com"
-            )
+            echo 'Pipeline failed during deployment.'
         }
     }
 }
