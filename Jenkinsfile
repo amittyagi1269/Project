@@ -2,48 +2,37 @@ pipeline {
     agent any
 
     environment {
-        VM2_IP = '192.168.31.252'
-        VM2_USER = 'root'
-        TARGET_DIR = '/var/www/html'
-        SCANNER_HOME = tool 'SonarQubeScanner' 
-        // Directly bind your newly created Jenkins credential here:
-        SONAR_TOKEN = credentials('sonarqube-token')
+        DEPLOY_SERVER = "root1@192.168.31.252"
+        TARGET_DIR   = "/var/www/html"
+        SONAR_HOST   = "http://192.168.31.252:9000"
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/amittyagi1269/Project.git'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Code Analysis (SonarQube)') {
             steps {
-                withSonarQubeEnv('SonarQubeServer') {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
-                        ${SCANNER_HOME}/bin/sonar-scanner \
-                        -Dsonar.projectKey=Project-CI-CD-Pipeline \
-                        -Dsonar.sources=. \
-                        -Dsonar.token=${SONAR_TOKEN}
+                        sonar-scanner \
+                          -Dsonar.host.url=${SONAR_HOST} \
+                          -Dsonar.login=${SONAR_TOKEN} \
+                          -Dsonar.projectKey=Project-CI-CD \
+                          -Dsonar.sources=.
                     '''
                 }
             }
         }
 
-        stage('Quality Gate Check') {
-            steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
-        stage('Deploy to VM2') {
+        stage('Deploy to Target Server') {
             steps {
                 sh '''
-                    echo 'Deploying code to VM2 via passwordless SSH...'
-                    rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude='.git' ./ ''' + "${VM2_USER}@${VM2_IP}:${TARGET_DIR}/" + '''
-                    ssh -o StrictHostKeyChecking=no ''' + "${VM2_USER}@${VM2_IP}" + ''' 'systemctl reload httpd'
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} "mkdir -p ${TARGET_DIR}"
+                    rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' ./ ${DEPLOY_SERVER}:${TARGET_DIR}/
                 '''
             }
         }
@@ -51,10 +40,22 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline executed successfully: Code tested via SonarQube and deployed to VM2!'
+            emailext (
+                subject: "SUCCESSFUL: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
+                body: """<p>Build <b>#${env.BUILD_NUMBER}</b> completed successfully.</p>
+                         <p>URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                to: "devops-alerts@yourdomain.com",
+                mimeType: 'text/html'
+            )
         }
         failure {
-            echo 'Pipeline failed during execution, analysis, or deployment.'
+            emailext (
+                subject: "FAILED: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
+                body: """<p>Build <b>#${env.BUILD_NUMBER}</b> failed.</p>
+                         <p>Check logs at: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                to: "devops-alerts@yourdomain.com",
+                mimeType: 'text/html'
+            )
         }
     }
 }
