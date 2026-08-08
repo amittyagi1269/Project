@@ -18,12 +18,13 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                // Utilizing Jenkins SonarQube scanner environment integration
+                sh 'echo "Token check (should not be empty): ${SONAR_AUTH_TOKEN}"'
                 withSonarQubeEnv('SonarQubeServer') {
                     sh """
                         sonar-scanner \
                         -Dsonar.projectKey=my-project \
-                        -Dsonar.sources=.
+                        -Dsonar.sources=. \
+                        -Dsonar.token=${SONAR_AUTH_TOKEN}
                     """
                 }
             }
