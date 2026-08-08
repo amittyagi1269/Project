@@ -44,7 +44,7 @@ pipeline {
                 subject: "SUCCESSFUL: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
                 body: """<p>Build <b>#${env.BUILD_NUMBER}</b> completed successfully.</p>
                          <p>URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
-                to: "devops-alerts@yourdomain.com",
+                to: "amittyagi1269@gmail.com",
                 mimeType: 'text/html'
             )
         }
@@ -53,7 +53,7 @@ pipeline {
                 subject: "FAILED: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
                 body: """<p>Build <b>#${env.BUILD_NUMBER}</b> failed.</p>
                          <p>Check logs at: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
-                to: "devops-alerts@yourdomain.com",
+                to: "amittyagi1269@gmail.com",
                 mimeType: 'text/html'
             )
         }
