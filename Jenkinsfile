@@ -18,11 +18,13 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
-                        sonar-scanner \
+                        docker run --rm \
+                          -v "${WORKSPACE}:/usr/src" \
+                          sonarsource/sonar-scanner-cli \
                           -Dsonar.host.url=${SONAR_HOST} \
                           -Dsonar.token=${SONAR_TOKEN} \
                           -Dsonar.projectKey=Project-CI-CD \
-                          -Dsonar.sources=.
+                          -Dsonar.sources=/usr/src
                     '''
                 }
             }
