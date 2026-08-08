@@ -6,6 +6,8 @@ pipeline {
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
         SCANNER_HOME = tool 'SonarQubeScanner' 
+        // Directly bind your newly created Jenkins credential here:
+        SONAR_TOKEN = credentials('sonarqube-token')
     }
 
     stages {
@@ -22,7 +24,7 @@ pipeline {
                         ${SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=Project-CI-CD-Pipeline \
                         -Dsonar.sources=. \
-                        -Dsonar.token=$SONAR_AUTH_TOKEN
+                        -Dsonar.token=${SONAR_TOKEN}
                     '''
                 }
             }
