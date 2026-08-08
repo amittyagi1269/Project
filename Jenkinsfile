@@ -2,52 +2,59 @@ pipeline {
     agent any
 
     environment {
-        VM2_IP = '10.133.198.198'
-        VM2_USER = 'root'
-        TARGET_DIR = '/var/www/html'
+        DEPLOY_SERVER = "root1@192.168.31.252"
+        TARGET_DIR   = "/var/www/html"
+        SONAR_HOST   = "http://192.168.31.252:9000"
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/amittyagi1269/Project.git'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Code Analysis (SonarQube)') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh 'sonar-scanner -Dsonar.host.url=http://10.133.198.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=$SONAR_TOKEN'
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.host.url=${SONAR_HOST} \
+                          -Dsonar.token=${SONAR_TOKEN} \
+                          -Dsonar.projectKey=Project-CI-CD \
+                          -Dsonar.sources=.
+                    '''
                 }
             }
         }
 
-        stage('Deploy to VM2') {
+        stage('Deploy to Target Server') {
             steps {
-                sh """
-                    echo 'Deploying code to VM2 via passwordless SSH...'
-                    rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude='.git' ./ ${VM2_USER}@${VM2_IP}:${TARGET_DIR}/
-                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload httpd'
-                """
+                sh '''
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} "mkdir -p ${TARGET_DIR}"
+                    rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' ./ ${DEPLOY_SERVER}:${TARGET_DIR}/
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment to VM2 and SonarQube analysis completed successfully!'
             emailext (
-                subject: "SUCCESS: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Good news! The CI/CD pipeline completed successfully.\n\nTarget VM: ${env.VM2_IP}\nConsole Output: ${env.BUILD_URL}",
-                to: "amittyagi1269@gmail.com"
+                subject: "SUCCESSFUL: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
+                body: """<p>Build <b>#${env.BUILD_NUMBER}</b> completed successfully.</p>
+                         <p>URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                to: "amittyagi1269@gmail.com",
+                mimeType: 'text/html'
             )
         }
         failure {
-            echo 'Pipeline failed. Sending alert email...'
             emailext (
-                subject: "FAILED: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Oops! The CI/CD pipeline has failed during execution.\n\nCheck logs and fix issues at: ${env.BUILD_URL}",
-                to: "amittyagi1269@gmail.com"
+                subject: "FAILED: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
+                body: """<p>Build <b>#${env.BUILD_NUMBER}</b> failed.</p>
+                         <p>Check logs at: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                to: "amittyagi1269@gmail.com",
+                mimeType: 'text/html'
             )
         }
     }
