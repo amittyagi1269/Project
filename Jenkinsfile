@@ -5,8 +5,6 @@ pipeline {
         VM2_IP = '192.168.31.252'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
-        // Define scanner variable globally for the pipeline stages
-        SCANNER_HOME = tool 'sonar-scanner' 
     }
 
     stages {
@@ -18,11 +16,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                // withSonarQubeEnv connects to your global SonarQube server configuration
-                // If you haven't named your server in Jenkins, you can use withSonarQubeEnv() without arguments
-                withSonarQubeEnv('My SonarQube Server') {
-                    sh "${SCANNER_HOME}/bin/sonar-scanner -Dsonar.projectKey=my-project -Dsonar.sources=."
-                }
+                sh 'sonar-scanner -Dsonar.host.url=http://192.168.31.252:9000 -Dsonar.projectKey=my-project -Dsonar.sources=.'
             }
         }
 
