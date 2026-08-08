@@ -17,11 +17,10 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh 'echo "Token check (should not be empty): $SONAR_AUTH_TOKEN"'
                 withSonarQubeEnv('SonarQubeServer') {
                     sh '''
-                        sonar-scanner \
-                        -Dsonar.projectKey=my-project \
+                        ${SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=Project-CI-CD-Pipeline \
                         -Dsonar.sources=. \
                         -Dsonar.token=$SONAR_AUTH_TOKEN
                     '''
