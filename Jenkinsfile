@@ -5,6 +5,8 @@ pipeline {
         VM2_IP = '192.168.31.252'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
+        // Use credentials ID configured in Jenkins for secure token/auth handling
+        SCANNER_HOME = tool 'SonarQubeScanner' 
     }
 
     stages {
@@ -16,7 +18,23 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh 'sonar-scanner -Dsonar.host.url=http://192.168.31.252:9000 -Dsonar.projectKey=my-project -Dsonar.sources=.'
+                // Utilizing Jenkins SonarQube scanner environment integration
+                withSonarQubeEnv('SonarQubeServer') {
+                    sh """
+                        sonar-scanner \
+                        -Dsonar.projectKey=my-project \
+                        -Dsonar.sources=.
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate Check') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    // Pauses pipeline until SonarQube analyzes and returns the Quality Gate status
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
@@ -33,10 +51,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment to VM2 (/var/www/html) and SonarQube analysis completed successfully!'
+            echo 'Pipeline executed successfully: Code tested via SonarQube and deployed to VM2!'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline failed during execution, analysis, or deployment.'
         }
     }
 }
