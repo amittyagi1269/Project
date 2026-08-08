@@ -5,7 +5,6 @@ pipeline {
         VM2_IP = '192.168.31.252'
         VM2_USER = 'root'
         TARGET_DIR = '/var/www/html'
-        // Use credentials ID configured in Jenkins for secure token/auth handling
         SCANNER_HOME = tool 'SonarQubeScanner' 
     }
 
@@ -18,13 +17,13 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh 'echo "Token check (should not be empty): ${SONAR_AUTH_TOKEN}"'
+                sh 'echo "Token check (should not be empty): ${env.SONAR_AUTH_TOKEN}"'
                 withSonarQubeEnv('SonarQubeServer') {
                     sh """
                         sonar-scanner \
                         -Dsonar.projectKey=my-project \
                         -Dsonar.sources=. \
-                        -Dsonar.token=${SONAR_AUTH_TOKEN}
+                        -Dsonar.token=${env.SONAR_AUTH_TOKEN}
                     """
                 }
             }
@@ -33,7 +32,6 @@ pipeline {
         stage('Quality Gate Check') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    // Pauses pipeline until SonarQube analyzes and returns the Quality Gate status
                     waitForQualityGate abortPipeline: true
                 }
             }
