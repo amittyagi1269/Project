@@ -14,6 +14,12 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                sh 'sonar-scanner -Dsonar.host.url=http://192.168.31.252:9000 -Dsonar.projectKey=my-project -Dsonar.sources=.'
+            }
+        }
+
         stage('Deploy to VM2') {
             steps {
                 sh """
@@ -27,10 +33,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment to VM2 (/var/www/html) completed successfully!'
+            echo 'Deployment to VM2 (/var/www/html) and SonarQube analysis completed successfully!'
         }
         failure {
-            echo 'Pipeline failed during deployment.'
+            echo 'Pipeline failed.'
         }
     }
 }
