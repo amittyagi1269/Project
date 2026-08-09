@@ -7,11 +7,9 @@ pipeline {
     }
 
     environment {
-        TARGET_DIR   = "/var/www/html"                  // Changed to /data for VM3
-        SONAR_HOST   = "http://192.168.31.252:9000"
-        VM_SSH_USER  = "root"                 // Username on VM3
-        VM_IP        = "192.168.31.252"         // Replace with your VM3 IP
-        ALERT_EMAIL  = "amittyagi1269@gmail.com"
+        TARGET_DIR  = "/var/www/html"
+        SONAR_HOST  = "http://192.168.31.252:9000"
+        ALERT_EMAIL = "amittyagi1269@gmail.com"
     }
 
     stages {
@@ -36,20 +34,19 @@ pipeline {
             }
         }
 
-        stage('Deploy to VM3 (Apache)') {
+        stage('Deploy Locally (Apache)') {
             steps {
                 sh '''
-                    # Direct passwordless SSH and rsync
-                    SSH_CMD="ssh -o StrictHostKeyChecking=no"
-
-                    $SSH_CMD ${VM_SSH_USER}@${VM_IP} "sudo mkdir -p ${TARGET_DIR} && sudo chown -R ${VM_SSH_USER}:${VM_SSH_USER} ${TARGET_DIR}"
+                    # Ensure target directory exists and sync workspace directly
+                    mkdir -p ${TARGET_DIR}
 
                     rsync -avz --delete \
-                      -e "$SSH_CMD" \
-                      --exclude='.git' --exclude='Jenkinsfile' --exclude='plugins.txt' \
-                      ./ ${VM_SSH_USER}@${VM_IP}:${TARGET_DIR}/
+                      --exclude='.git' \
+                      --exclude='Jenkinsfile' \
+                      --exclude='plugins.txt' \
+                      ./ ${TARGET_DIR}/
 
-                    echo "Deployment to VM3 (${VM_IP}:${TARGET_DIR}) completed successfully"
+                    echo "Local deployment to ${TARGET_DIR} completed successfully!"
                 '''
             }
         }
