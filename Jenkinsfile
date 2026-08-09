@@ -36,10 +36,8 @@ pipeline {
         stage('Deploy to VM2 (Apache)') {
             steps {
                 sh '''
-                    cp /var/jenkins_home/.ssh/vm2_deploy_key /tmp/vm2_deploy_key
-                    chmod 600 /tmp/vm2_deploy_key
-
-                    SSH_CMD="ssh -i /tmp/vm2_deploy_key -o StrictHostKeyChecking=no"
+                    # Direct passwordless SSH and rsync
+                    SSH_CMD="ssh -o StrictHostKeyChecking=no"
 
                     $SSH_CMD ${VM2_SSH_USER}@${VM2_IP} "sudo mkdir -p ${TARGET_DIR} && sudo chown -R ${VM2_SSH_USER}:${VM2_SSH_USER} ${TARGET_DIR}"
 
@@ -48,7 +46,6 @@ pipeline {
                       --exclude='.git' --exclude='Jenkinsfile' --exclude='plugins.txt' \
                       ./ ${VM2_SSH_USER}@${VM2_IP}:${TARGET_DIR}/
 
-                    rm -f /tmp/vm2_deploy_key
                     echo "Deployment to VM2 (${VM2_IP}:${TARGET_DIR}) completed successfully"
                 '''
             }
