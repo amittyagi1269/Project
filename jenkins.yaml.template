@@ -1,0 +1,88 @@
+jenkins:
+  systemMessage: "Automated Jenkins CI/CD Pipeline"
+  numExecutors: 2
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  globalNodeProperties:
+    envVars:
+      env:
+        - key: "ALERT_EMAIL"
+          value: "${ALERT_EMAIL}"
+
+credentials:
+  system:
+    domainCredentials:
+      - domain:
+          name: "global"
+          description: "Global credentials"
+        credentials:
+          - string:
+              scope: GLOBAL
+              id: "sonar-token"
+              secret: "__SONAR_TOKEN__"
+              description: "SonarQube analysis token (auto-generated at container start)"
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+    adminAddress: "${ALERT_EMAIL}"
+  mailer:
+    smtpHost: "smtp.gmail.com"
+    smtpPort: 465
+    useSsl: true
+    useTls: false
+    charset: "UTF-8"
+    defaultSuffix: "@gmail.com"
+    replyToAddress: "${ALERT_EMAIL}"
+    authentication:
+      username: "${GMAIL_USERNAME}"
+      password: "${GMAIL_APP_PASSWORD}"
+  extendedEmailPublisher:
+    smtpHost: "smtp.gmail.com"
+    smtpPort: "465"
+    useSsl: true
+    adminRequiredForMode: false
+    charset: "UTF-8"
+    mailAccount:
+      smtpHost: "smtp.gmail.com"
+      smtpPort: "465"
+      useSsl: true
+      smtpUsername: "${GMAIL_USERNAME}"
+      smtpPassword: "${GMAIL_APP_PASSWORD}"
+
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+
+jobs:
+  - script: >
+      pipelineJob('Project-CI-CD-Pipeline') {
+          properties {
+              githubProjectUrl('https://github.com/amittyagi1269/Project.git')
+          }
+          triggers {
+              githubPush()
+          }
+          definition {
+              cpsScm {
+                  scm {
+                      git {
+                          remote {
+                              url('https://github.com/amittyagi1269/Project.git')
+                          }
+                          branches('main')
+                      }
+                  }
+                  scriptPath('Jenkinsfile')
+              }
+          }
+      }

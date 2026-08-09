@@ -1,10 +1,14 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
     environment {
-        DEPLOY_SERVER = "root1@192.168.31.252"
-        TARGET_DIR   = "/var/www/html"
-        SONAR_HOST   = "http://192.168.31.252:9000"
+        TARGET_DIR = "/var/www/html"
+        SONAR_HOST = "http://192.168.31.15:9000"
     }
 
     stages {
@@ -18,23 +22,23 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
-                        docker run --rm \
-                          -v "${WORKSPACE}:/usr/src" \
-                          sonarsource/sonar-scanner-cli \
+                        sonar-scanner \
                           -Dsonar.host.url=${SONAR_HOST} \
-                          -Dsonar.token=${SONAR_TOKEN} \
+                          -Dsonar.login=${SONAR_TOKEN} \
                           -Dsonar.projectKey=Project-CI-CD \
-                          -Dsonar.sources=/usr/src
+                          -Dsonar.sources=. \
+                          -Dsonar.exclusions=Jenkinsfile,plugins.txt,.git/**
                     '''
                 }
             }
         }
 
-        stage('Deploy to Target Server') {
+        stage('Deploy to Local Directory (VM1)') {
             steps {
                 sh '''
-                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} "mkdir -p ${TARGET_DIR}"
-                    rsync -avz -e "ssh -o StrictHostKeyChecking=no" --exclude='.git*' ./ ${DEPLOY_SERVER}:${TARGET_DIR}/
+                    mkdir -p ${TARGET_DIR}
+                    rsync -a --delete --exclude='.git' --exclude='Jenkinsfile' ./ ${TARGET_DIR}/
+                    echo "Deployment completed successfully at ${TARGET_DIR}"
                 '''
             }
         }
@@ -43,19 +47,24 @@ pipeline {
     post {
         success {
             emailext (
-                subject: "SUCCESSFUL: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
-                body: """<p>Build <b>#${env.BUILD_NUMBER}</b> completed successfully.</p>
-                         <p>URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
-                to: "amittyagi1269@gmail.com",
+                subject: "✅ SUCCESS: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                body: """<p>Build Status: <b>${currentBuild.currentResult}</b></p>
+                         <p>Project: ${env.JOB_NAME}</p>
+                         <p>Build Number: #${env.BUILD_NUMBER}</p>
+                         <p>Duration: ${currentBuild.durationString}</p>
+                         <p>Build URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                to: "${env.ALERT_EMAIL}",
                 mimeType: 'text/html'
             )
         }
         failure {
             emailext (
-                subject: "FAILED: Job '${env.JOB_NAME}' [Build #${env.BUILD_NUMBER}]",
-                body: """<p>Build <b>#${env.BUILD_NUMBER}</b> failed.</p>
-                         <p>Check logs at: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
-                to: "amittyagi1269@gmail.com",
+                subject: "❌ FAILED: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                body: """<p>Build Status: <b>${currentBuild.currentResult}</b></p>
+                         <p>Project: ${env.JOB_NAME}</p>
+                         <p>Build Number: #${env.BUILD_NUMBER}</p>
+                         <p>Check the console output: <a href='${env.BUILD_URL}console'>${env.BUILD_URL}console</a></p>""",
+                to: "${env.ALERT_EMAIL}",
                 mimeType: 'text/html'
             )
         }
