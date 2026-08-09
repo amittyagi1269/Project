@@ -7,8 +7,11 @@ pipeline {
     }
 
     environment {
-        TARGET_DIR = "/var/www/html"
-        SONAR_HOST = "http://192.168.31.252:9000"
+        TARGET_DIR   = "/var/www/html"
+        SONAR_HOST   = "http://192.168.31.252:9000"
+        VM2_SSH_USER = "root"
+        VM2_IP       = "127.0.0.1" // Update this IP whenever VM2's IP address changes
+        ALERT_EMAIL  = "amittyagi1269@gmail.com"
     }
 
     stages {
