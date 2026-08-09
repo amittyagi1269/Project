@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         TARGET_DIR = "/var/www/html"
-        SONAR_HOST = "http://192.168.31.15:9000"
+        SONAR_HOST = "http://192.168.31.252:9000"
     }
 
     stages {
