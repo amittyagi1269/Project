@@ -7,8 +7,6 @@ pipeline {
     }
 
     environment {
-        // TARGET_DIR, SONAR_HOST are set here; VM2_IP / VM2_SSH_USER / ALERT_EMAIL
-        // come from Jenkins global env vars injected by JCasC (see jenkins.yaml.template)
         TARGET_DIR = "/var/www/html"
         SONAR_HOST = "http://192.168.31.252:9000"
     }
@@ -38,13 +36,19 @@ pipeline {
         stage('Deploy to VM2 (Apache)') {
             steps {
                 sh '''
-                    chmod 600 /var/jenkins_home/.ssh/vm2_deploy_key
-                    SSH_CMD="ssh -i /var/jenkins_home/.ssh/vm2_deploy_key -o StrictHostKeyChecking=no"
+                    cp /var/jenkins_home/.ssh/vm2_deploy_key /tmp/vm2_deploy_key
+                    chmod 600 /tmp/vm2_deploy_key
+
+                    SSH_CMD="ssh -i /tmp/vm2_deploy_key -o StrictHostKeyChecking=no"
+
                     $SSH_CMD ${VM2_SSH_USER}@${VM2_IP} "sudo mkdir -p ${TARGET_DIR} && sudo chown -R ${VM2_SSH_USER}:${VM2_SSH_USER} ${TARGET_DIR}"
+
                     rsync -avz --delete \
                       -e "$SSH_CMD" \
                       --exclude='.git' --exclude='Jenkinsfile' --exclude='plugins.txt' \
                       ./ ${VM2_SSH_USER}@${VM2_IP}:${TARGET_DIR}/
+
+                    rm -f /tmp/vm2_deploy_key
                     echo "Deployment to VM2 (${VM2_IP}:${TARGET_DIR}) completed successfully"
                 '''
             }
