@@ -7,10 +7,10 @@ pipeline {
     }
 
     environment {
-        TARGET_DIR   = "/var/www/html"
+        TARGET_DIR   = "/var/www/html"                  // Changed to /data for VM3
         SONAR_HOST   = "http://192.168.31.252:9000"
-        VM2_SSH_USER = "root"
-        VM2_IP       = "127.0.0.1" // Update this IP whenever VM2's IP address changes
+        VM_SSH_USER  = "root"                 // Username on VM3
+        VM_IP        = "localhost"         // Replace with your VM3 IP
         ALERT_EMAIL  = "amittyagi1269@gmail.com"
     }
 
@@ -36,20 +36,20 @@ pipeline {
             }
         }
 
-        stage('Deploy to VM2 (Apache)') {
+        stage('Deploy to VM3 (Apache)') {
             steps {
                 sh '''
                     # Direct passwordless SSH and rsync
                     SSH_CMD="ssh -o StrictHostKeyChecking=no"
 
-                    $SSH_CMD ${VM2_SSH_USER}@${VM2_IP} "sudo mkdir -p ${TARGET_DIR} && sudo chown -R ${VM2_SSH_USER}:${VM2_SSH_USER} ${TARGET_DIR}"
+                    $SSH_CMD ${VM_SSH_USER}@${VM_IP} "sudo mkdir -p ${TARGET_DIR} && sudo chown -R ${VM_SSH_USER}:${VM_SSH_USER} ${TARGET_DIR}"
 
                     rsync -avz --delete \
                       -e "$SSH_CMD" \
                       --exclude='.git' --exclude='Jenkinsfile' --exclude='plugins.txt' \
-                      ./ ${VM2_SSH_USER}@${VM2_IP}:${TARGET_DIR}/
+                      ./ ${VM_SSH_USER}@${VM_IP}:${TARGET_DIR}/
 
-                    echo "Deployment to VM2 (${VM2_IP}:${TARGET_DIR}) completed successfully"
+                    echo "Deployment to VM3 (${VM_IP}:${TARGET_DIR}) completed successfully"
                 '''
             }
         }
