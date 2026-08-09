@@ -10,7 +10,7 @@ pipeline {
         TARGET_DIR   = "/var/www/html"                  // Changed to /data for VM3
         SONAR_HOST   = "http://192.168.31.252:9000"
         VM_SSH_USER  = "root"                 // Username on VM3
-        VM_IP        = "localhost"         // Replace with your VM3 IP
+        VM_IP        = "192.168.31.252"         // Replace with your VM3 IP
         ALERT_EMAIL  = "amittyagi1269@gmail.com"
     }
 
