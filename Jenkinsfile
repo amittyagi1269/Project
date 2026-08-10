@@ -34,19 +34,27 @@ pipeline {
             }
         }
 
-        stage('Deploy Locally (Apache)') {
+        stage('Deploy Locally (Apache on VM)') {
             steps {
                 sh '''
-                    # Ensure target directory exists and sync workspace directly
-                    mkdir -p ${TARGET_DIR}
+                    # Ensure target directory exists
+                    sudo mkdir -p ${TARGET_DIR}
 
-                    rsync -avz --delete \
+                    # Sync workspace directly to local VM Apache web root
+                    sudo rsync -avz --delete \
                       --exclude='.git' \
                       --exclude='Jenkinsfile' \
                       --exclude='plugins.txt' \
                       ./ ${TARGET_DIR}/
 
-                    echo "Local deployment to ${TARGET_DIR} completed successfully!"
+                    # Fix permissions for Apache (www-data for Ubuntu/Debian, apache for RHEL/CentOS)
+                    sudo chown -R www-data:www-data ${TARGET_DIR} || sudo chown -R apache:apache ${TARGET_DIR}
+                    sudo chmod -R 755 ${TARGET_DIR}
+
+                    # Reload web server service
+                    sudo systemctl reload apache2 || sudo systemctl reload httpd || true
+
+                    echo "Local VM deployment to ${TARGET_DIR} completed successfully!"
                 '''
             }
         }
