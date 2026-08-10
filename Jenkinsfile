@@ -48,8 +48,8 @@ pipeline {
                       ./ ${TARGET_DIR}/
 
                     # Fix permissions for Apache (www-data for Ubuntu/Debian, apache for RHEL/CentOS)
-                    sudo chown -R www-data:www-data ${TARGET_DIR} || sudo chown -R apache:apache ${TARGET_DIR}
-                    sudo chmod -R 755 ${TARGET_DIR}
+                    #sudo chown -R www-data:www-data ${TARGET_DIR} || sudo chown -R apache:apache ${TARGET_DIR}
+                    #sudo chmod -R 755 ${TARGET_DIR}
 
                     # Reload web server service
                     sudo systemctl reload apache2 || sudo systemctl reload httpd || true
