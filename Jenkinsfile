@@ -10,8 +10,8 @@ pipeline {
         TARGET_DIR  = "/var/www/html"
         SONAR_HOST  = "http://192.168.31.252:9000"
         ALERT_EMAIL = "amittyagi1269@gmail.com"
-        REMOTE_HOST = "192.168.31.100" // Replace with your remote VM IP
-        REMOTE_USER = "ubuntu"         // Replace with your remote VM user (e.g., ubuntu, centos, root)
+        REMOTE_HOST = "192.168.31.252" // Replace with your remote VM IP
+        REMOTE_USER = "root"         // Replace with your remote VM user (e.g., ubuntu, centos, root)
     }
 
     stages {
