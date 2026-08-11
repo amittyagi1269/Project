@@ -10,6 +10,8 @@ pipeline {
         TARGET_DIR  = "/var/www/html"
         SONAR_HOST  = "http://192.168.31.252:9000"
         ALERT_EMAIL = "amittyagi1269@gmail.com"
+        REMOTE_HOST = "192.168.31.100" // Replace with your remote VM IP
+        REMOTE_USER = "ubuntu"         // Replace with your remote VM user (e.g., ubuntu, centos, root)
     }
 
     stages {
@@ -34,28 +36,26 @@ pipeline {
             }
         }
 
-        stage('Deploy Locally (Apache on VM)') {
+        stage('Deploy to Remote VM') {
             steps {
-                sh '''
-                    # Ensure target directory exists
-                    sudo mkdir -p ${TARGET_DIR}
+                sshagent(credentialsId: 'remote-vm-ssh-key') {
+                    sh '''
+                        # Sync workspace files to the remote VM via rsync over SSH
+                        rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+                          --exclude='.git' \
+                          --exclude='Jenkinsfile' \
+                          --exclude='plugins.txt' \
+                          ./ ${REMOTE_USER}@${REMOTE_HOST}:${TARGET_DIR}/
 
-                    # Sync workspace directly to local VM Apache web root
-                    sudo rsync -avz --delete \
-                      --exclude='.git' \
-                      --exclude='Jenkinsfile' \
-                      --exclude='plugins.txt' \
-                      ./ ${TARGET_DIR}/
+                        # Fix ownership and restart the web server on the remote VM
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} \
+                          "sudo chown -R www-data:www-data ${TARGET_DIR} || sudo chown -R apache:apache ${TARGET_DIR} && \
+                           sudo chmod -R 755 ${TARGET_DIR} && \
+                           (sudo systemctl reload apache2 || sudo systemctl reload httpd || true)"
 
-                    # Fix permissions for Apache (www-data for Ubuntu/Debian, apache for RHEL/CentOS)
-                    #sudo chown -R www-data:www-data ${TARGET_DIR} || sudo chown -R apache:apache ${TARGET_DIR}
-                    #sudo chmod -R 755 ${TARGET_DIR}
-
-                    # Reload web server service
-                    sudo systemctl reload apache2 || sudo systemctl reload httpd || true
-
-                    echo "Local VM deployment to ${TARGET_DIR} completed successfully!"
-                '''
+                        echo "Remote deployment to ${REMOTE_USER}@${REMOTE_HOST}:${TARGET_DIR} completed successfully!"
+                    '''
+                }
             }
         }
     }
