@@ -7,11 +7,8 @@ pipeline {
     }
 
     environment {
-        TARGET_DIR  = "/var/www/html"
-        SONAR_HOST  = "http://192.168.31.252:9000"
-        ALERT_EMAIL = "amittyagi1269@gmail.com"
-        REMOTE_HOST = "192.168.31.252" // Replace with your remote VM IP
-        REMOTE_USER = "root"         // Replace with your remote VM user
+        TARGET_DIR = "/var/www/html"
+        SONAR_HOST = "http://192.168.31.252:9000"
     }
 
     stages {
@@ -36,26 +33,24 @@ pipeline {
             }
         }
 
-        stage('Deploy to Remote VM') {
+        stage('Deploy to VM2 (Apache)') {
             steps {
-                sshagent(credentials: ['remote-vm-ssh-key']) {
-                    sh '''
-                        # Sync workspace files to the remote VM via rsync over SSH
-                        rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
-                          --exclude='.git' \
-                          --exclude='Jenkinsfile' \
-                          --exclude='plugins.txt' \
-                          ./ ${REMOTE_USER}@${REMOTE_HOST}:${TARGET_DIR}/
+                sh '''
+                    cp /var/jenkins_home/.ssh/vm2_deploy_key /tmp/vm2_deploy_key
+                    chmod 600 /tmp/vm2_deploy_key
 
-                        # Fix ownership and restart the web server on the remote VM
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} \
-                          "sudo chown -R www-data:www-data ${TARGET_DIR} || sudo chown -R apache:apache ${TARGET_DIR} && \
-                           sudo chmod -R 755 ${TARGET_DIR} && \
-                           (sudo systemctl reload apache2 || sudo systemctl reload httpd || true)"
+                    SSH_CMD="ssh -i /tmp/vm2_deploy_key -o StrictHostKeyChecking=no"
 
-                        echo "Remote deployment to ${REMOTE_USER}@${REMOTE_HOST}:${TARGET_DIR} completed successfully!"
-                    '''
-                }
+                    $SSH_CMD ${VM2_SSH_USER}@${VM2_IP} "sudo mkdir -p ${TARGET_DIR} && sudo chown -R ${VM2_SSH_USER}:${VM2_SSH_USER} ${TARGET_DIR}"
+
+                    rsync -avz --delete \
+                      -e "$SSH_CMD" \
+                      --exclude='.git' --exclude='Jenkinsfile' --exclude='plugins.txt' \
+                      ./ ${VM2_SSH_USER}@${VM2_IP}:${TARGET_DIR}/
+
+                    rm -f /tmp/vm2_deploy_key
+                    echo "Deployment to VM2 (${VM2_IP}:${TARGET_DIR}) completed successfully"
+                '''
             }
         }
     }
