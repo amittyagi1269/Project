@@ -11,7 +11,7 @@ pipeline {
         SONAR_HOST  = "http://192.168.31.252:9000"
         ALERT_EMAIL = "amittyagi1269@gmail.com"
         REMOTE_HOST = "192.168.31.252" // Replace with your remote VM IP
-        REMOTE_USER = "root"         // Replace with your remote VM user (e.g., ubuntu, centos, root)
+        REMOTE_USER = "root"         // Replace with your remote VM user
     }
 
     stages {
@@ -38,7 +38,7 @@ pipeline {
 
         stage('Deploy to Remote VM') {
             steps {
-                sshagent(credentialsId: 'remote-vm-ssh-key') {
+                sshagent(credentials: ['remote-vm-ssh-key']) {
                     sh '''
                         # Sync workspace files to the remote VM via rsync over SSH
                         rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
