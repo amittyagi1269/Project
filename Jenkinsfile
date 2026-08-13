@@ -57,27 +57,25 @@ pipeline {
     post {
         success {
             emailext (
+                to: "${env.ALERT_EMAIL}",
                 subject: "✅ SUCCESS: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
                 body: """<p>Build Status: <b>${currentBuild.currentResult}</b></p>
                          <p>Project: ${env.JOB_NAME}</p>
                          <p>Build Number: #${env.BUILD_NUMBER}</p>
                          <p>Duration: ${currentBuild.durationString}</p>
                          <p>Build URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
-                to: "${env.ALERT_EMAIL}",
-                mimeType: 'text/html',
-                recipientProviders: [developers(), requestor()]
+                mimeType: 'text/html'
             )
         }
         failure {
             emailext (
+                to: "${env.ALERT_EMAIL}",
                 subject: "❌ FAILED: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
                 body: """<p>Build Status: <b>${currentBuild.currentResult}</b></p>
                          <p>Project: ${env.JOB_NAME}</p>
                          <p>Build Number: #${env.BUILD_NUMBER}</p>
                          <p>Check the console output: <a href='${env.BUILD_URL}console'>${env.BUILD_URL}console</a></p>""",
-                to: "${env.ALERT_EMAIL}",
-                mimeType: 'text/html',
-                recipientProviders: [developers(), requestor()]
+                mimeType: 'text/html'
             )
         }
     }
