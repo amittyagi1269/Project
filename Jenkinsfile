@@ -11,6 +11,7 @@ pipeline {
         SONAR_HOST = "http://192.168.31.252:9000"
         VM2_IP = "192.168.31.252"
         VM2_SSH_USER = "root"
+        ALERT_EMAIL = "amittyagi1269@gmail.com"
     }
 
     stages {
@@ -63,7 +64,8 @@ pipeline {
                          <p>Duration: ${currentBuild.durationString}</p>
                          <p>Build URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
                 to: "${env.ALERT_EMAIL}",
-                mimeType: 'text/html'
+                mimeType: 'text/html',
+                recipientProviders: [developers(), requestor()]
             )
         }
         failure {
@@ -74,7 +76,8 @@ pipeline {
                          <p>Build Number: #${env.BUILD_NUMBER}</p>
                          <p>Check the console output: <a href='${env.BUILD_URL}console'>${env.BUILD_URL}console</a></p>""",
                 to: "${env.ALERT_EMAIL}",
-                mimeType: 'text/html'
+                mimeType: 'text/html',
+                recipientProviders: [developers(), requestor()]
             )
         }
     }
