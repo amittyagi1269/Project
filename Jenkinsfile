@@ -8,10 +8,10 @@ pipeline {
 
     environment {
         TARGET_DIR = "/var/www/html"
-        SONAR_HOST = "http://192.168.31.252:9000"
-        VM2_IP = "192.168.31.252"
-        VM2_SSH_USER = "root"
-        ALERT_EMAIL = "amittyagi1269@gmail.com"
+        SONAR_HOST = "http://${env.SONAR_IP}:9000"
+        VM2_IP = "${env.VM2_IP}"
+        VM2_SSH_USER = "${env.VM2_SSH_USER}"
+        ALERT_EMAIL = "${env.ALERT_EMAIL}"
     }
 
     stages {
