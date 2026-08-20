@@ -1,53 +1,81 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
     environment {
-        VM2_IP = '10.133.198.198'
-        VM2_USER = 'root'
-        TARGET_DIR = '/var/www/html'
+        TARGET_DIR = "/var/www/html"
+        SONAR_HOST = "http://${env.SONAR_IP}:9000"
+        VM2_IP = "${env.VM2_IP}"
+        VM2_SSH_USER = "${env.VM2_SSH_USER}"
+        ALERT_EMAIL = "${env.ALERT_EMAIL}"
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/amittyagi1269/Project.git'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Code Analysis (SonarQube)') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh 'sonar-scanner -Dsonar.host.url=http://10.133.198.198:9000 -Dsonar.projectKey=my-project -Dsonar.sources=. -Dsonar.token=$SONAR_TOKEN'
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.host.url=${SONAR_HOST} \
+                          -Dsonar.token=${SONAR_TOKEN} \
+                          -Dsonar.projectKey=Project-CI-CD \
+                          -Dsonar.sources=. \
+                          -Dsonar.exclusions=Jenkinsfile,plugins.txt,.git/**
+                    '''
                 }
             }
         }
 
-        stage('Deploy to VM2') {
+        stage('Deploy to VM2 (Apache)') {
             steps {
-                sh """
-                    echo 'Deploying code to VM2 via passwordless SSH...'
-                    rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude='.git' ./ ${VM2_USER}@${VM2_IP}:${TARGET_DIR}/
-                    ssh -o StrictHostKeyChecking=no ${VM2_USER}@${VM2_IP} 'systemctl reload httpd'
-                """
+                sh '''
+                    SSH_CMD="ssh -o StrictHostKeyChecking=no"
+
+                    $SSH_CMD ${VM2_SSH_USER}@${VM2_IP} "mkdir -p ${TARGET_DIR}"
+
+                    rsync -avz --delete \
+                      -e "$SSH_CMD" \
+                      --exclude='.git' --exclude='Jenkinsfile' --exclude='plugins.txt' \
+                      ./ ${VM2_SSH_USER}@${VM2_IP}:${TARGET_DIR}/
+
+                    echo "Deployment to VM2 (${VM2_IP}:${TARGET_DIR}) completed successfully"
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment to VM2 and SonarQube analysis completed successfully!'
             emailext (
-                subject: "SUCCESS: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Good news! The CI/CD pipeline completed successfully.\n\nTarget VM: ${env.VM2_IP}\nConsole Output: ${env.BUILD_URL}",
-                to: "amittyagi1269@gmail.com"
+                to: "${env.ALERT_EMAIL}",
+                subject: "✅ SUCCESS: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                body: """<p>Build Status: <b>${currentBuild.currentResult}</b></p>
+                         <p>Project: ${env.JOB_NAME}</p>
+                         <p>Build Number: #${env.BUILD_NUMBER}</p>
+                         <p>Duration: ${currentBuild.durationString}</p>
+                         <p>Build URL: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                mimeType: 'text/html'
             )
         }
         failure {
-            echo 'Pipeline failed. Sending alert email...'
             emailext (
-                subject: "FAILED: Pipeline Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "Oops! The CI/CD pipeline has failed during execution.\n\nCheck logs and fix issues at: ${env.BUILD_URL}",
-                to: "amittyagi1269@gmail.com"
+                to: "${env.ALERT_EMAIL}",
+                subject: "❌ FAILED: Build #${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                body: """<p>Build Status: <b>${currentBuild.currentResult}</b></p>
+                         <p>Project: ${env.JOB_NAME}</p>
+                         <p>Build Number: #${env.BUILD_NUMBER}</p>
+                         <p>Check the console output: <a href='${env.BUILD_URL}console'>${env.BUILD_URL}console</a></p>""",
+                mimeType: 'text/html'
             )
         }
     }
